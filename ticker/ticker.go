@@ -6,13 +6,13 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"log"
 	"math"
 	"net/url"
+	"os"
 	"sync"
 	"sync/atomic"
 	"time"
-
-	log "github.com/sirupsen/logrus"
 
 	"github.com/gorilla/websocket"
 	kiteconnect "github.com/zerodha/gokiteconnect/v4"
@@ -41,7 +41,8 @@ type Ticker struct {
 
 	subscribedTokens map[uint32]Mode
 
-	cancel context.CancelFunc
+	cancel   context.CancelFunc
+	debugLog *log.Logger
 }
 
 // atomicTime is wrapper over time.Time to safely access
@@ -167,6 +168,7 @@ func New(apiKey string, accessToken string) *Ticker {
 		reconnectMaxRetries: defaultReconnectMaxAttempts,
 		connectTimeout:      defaultConnectTimeout,
 		subscribedTokens:    map[uint32]Mode{},
+		debugLog:            log.New(os.Stdout, "DEBUG : ", log.Ldate|log.Ltime|log.Lshortfile),
 	}
 
 	return ticker
@@ -553,7 +555,6 @@ func (t *Ticker) SetMode(mode Mode, tokens []uint32) error {
 
 // Resubscribe resubscribes to the current stored subscriptions
 func (t *Ticker) Resubscribe() error {
-	log.SetLevel(log.DebugLevel)
 	var tokens []uint32
 	modes := map[Mode][]uint32{
 		ModeFull:  []uint32{},
@@ -569,7 +570,7 @@ func (t *Ticker) Resubscribe() error {
 		}
 	}
 
-	log.Debugf("Subscribe again: %v %v", tokens, t.subscribedTokens)
+	t.debugLog.Println("Subscribe again: ", tokens, t.subscribedTokens)
 
 	// Subscribe to tokens
 	if len(tokens) > 0 {
