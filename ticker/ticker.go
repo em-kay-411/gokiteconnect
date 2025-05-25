@@ -12,6 +12,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/gorilla/websocket"
 	kiteconnect "github.com/zerodha/gokiteconnect/v4"
 	"github.com/zerodha/gokiteconnect/v4/models"
@@ -47,12 +49,12 @@ type Ticker struct {
 type atomicTime struct {
 	v atomic.Value
 }
-	
+
 // Get returns the current timestamp.
 func (b *atomicTime) Get() time.Time {
 	return b.v.Load().(time.Time)
 }
-	 
+
 // Set sets the current timestamp.
 func (b *atomicTime) Set(value time.Time) {
 	b.v.Store(value)
@@ -356,7 +358,6 @@ func (t *Ticker) handleClose(code int, reason string) error {
 	return nil
 }
 
-
 // Trigger callback methods
 func (t *Ticker) triggerError(err error) {
 	if t.callbacks.onError != nil {
@@ -387,7 +388,6 @@ func (t *Ticker) triggerNoReconnect(attempt int) {
 		t.callbacks.onNoReconnect(attempt)
 	}
 }
-
 
 func (t *Ticker) triggerMessage(messageType int, message []byte) {
 	if t.callbacks.onMessage != nil {
@@ -553,6 +553,7 @@ func (t *Ticker) SetMode(mode Mode, tokens []uint32) error {
 
 // Resubscribe resubscribes to the current stored subscriptions
 func (t *Ticker) Resubscribe() error {
+	log.SetLevel(log.DebugLevel)
 	var tokens []uint32
 	modes := map[Mode][]uint32{
 		ModeFull:  []uint32{},
@@ -568,7 +569,7 @@ func (t *Ticker) Resubscribe() error {
 		}
 	}
 
-	fmt.Println("Subscribe again: ", tokens, t.subscribedTokens)
+	log.Debugf("Subscribe again: %v %v", tokens, t.subscribedTokens)
 
 	// Subscribe to tokens
 	if len(tokens) > 0 {
@@ -776,4 +777,3 @@ func convertPrice(seg uint32, val float64) float64 {
 		return val / 100.0
 	}
 }
-
